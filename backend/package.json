@@ -1,0 +1,11 @@
+{
+  "scripts": {
+    "dev": "tsc -b && node dist/index.js"
+  },
+  "dependencies": {
+    "@types/node": "^22.15.17",
+    "dotenv": "^16.5.0",
+    "openai": "^4.98.0",
+    "typescript": "^5.8.3"
+  }
+}
