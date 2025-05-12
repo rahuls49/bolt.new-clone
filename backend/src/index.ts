@@ -35,7 +35,7 @@ app.post("/template", async (req, res) => {
             max_completion_tokens: 50
         });
         const tech = response?.choices[0]?.message?.content?.trim();
-        switch(tech?.toLocaleLowerCase()){
+        switch (tech?.toLocaleLowerCase()) {
             case 'node':
                 res.status(200).json({
                     prompts: [`Here is an artifact that contains all files of the project visible to you.\nConsider the contents of ALL files in the project.\n\n${nodeBasePrompt}\n\nHere is a list of files that exist on the file system but are not being shown to you:\n\n  - .gitignore\n  - package-lock.json\n`],
@@ -45,18 +45,46 @@ app.post("/template", async (req, res) => {
                 break;
             case 'react':
                 res.status(200).json({
-                    prompts: [BASE_PROMPT, `Here is an artifact that contains all files of the project visible to you.\nConsider the contents of ALL files in the project.\n\n${reactBasePrompt}\n\nHere is a list of files that exist on the file system but are not being shown to you:\n\n  - .gitignore\n  - package-lock.json\n`], 
+                    prompts: [BASE_PROMPT, `Here is an artifact that contains all files of the project visible to you.\nConsider the contents of ALL files in the project.\n\n${reactBasePrompt}\n\nHere is a list of files that exist on the file system but are not being shown to you:\n\n  - .gitignore\n  - package-lock.json\n`],
                     uiPrompt: [reactBasePrompt]
                 })
                 return;
                 break;
             default:
-                res.status(403).json({message: "Invalid Request"})
+                res.status(403).json({ message: "Invalid Request" })
         }
     } catch (error) {
+        res.status(500).json({ message: error })
         console.error('Error:', error);
     }
 
+})
+
+
+app.post("/chat", async (req, res) => {
+    const { messages } = req.body;
+    // console.log({messages})
+    try {
+        const stream = await openai.chat.completions.create({
+            model: 'thudm/glm-4-32b:free',
+            messages,
+            stream: true,
+        });
+        // console.log(response?.choices[0]?.message)
+        // res.json({});
+        // res.setHeader('Content-Type', 'text/plain');
+        // res.setHeader('Transfer-Encoding', 'chunked');
+        for await (const chunk of stream) {
+            process.stdout.write(chunk.choices[0]?.delta?.content || '');
+            console.log(chunk.choices[0]?.delta?.content || '')
+            // res.write(chunk.choices[0]?.delta?.content || '')
+        }
+        // res.end();
+        res.status(200).json({});
+    } catch (error) {
+        res.status(500).json({ message: error });
+        console.error('Error:', error);
+    }
 })
 
 app.listen(3000, () => {
