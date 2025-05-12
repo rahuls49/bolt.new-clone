@@ -1,6 +1,8 @@
 require("dotenv").config();
 import OpenAI from 'openai';
-import { getSystemPrompt } from './prompt/prompts';
+import { BASE_PROMPT, getSystemPrompt } from './prompt/prompts';
+import { reactBasePrompt, nodeBasePrompt } from './prompt/defaults/basePrompts';
+import express from "express";
 
 const openai = new OpenAI({
     baseURL: 'https://openrouter.ai/api/v1',
@@ -11,7 +13,55 @@ const openai = new OpenAI({
     //   },
 });
 
-const reactBasePrompt = "";
+const app = express();
+app.use(express.json());
+
+app.post("/template", async (req, res) => {
+    const { prompt } = req.body;
+
+    try {
+        const response = await openai.chat.completions.create({
+            model: 'thudm/glm-4-32b:free',
+            messages: [
+                {
+                    role: "system",
+                    content: "Based on the User Prompt, Return 'node' or 'react' in response, only return a single word nothing extra, If there is any ambiguity take react as default"
+                },
+                {
+                    role: "system",
+                    content: prompt
+                },
+            ],
+            max_completion_tokens: 50
+        });
+        const tech = response?.choices[0]?.message?.content?.trim();
+        switch(tech?.toLocaleLowerCase()){
+            case 'node':
+                res.status(200).json({
+                    prompts: [`Here is an artifact that contains all files of the project visible to you.\nConsider the contents of ALL files in the project.\n\n${nodeBasePrompt}\n\nHere is a list of files that exist on the file system but are not being shown to you:\n\n  - .gitignore\n  - package-lock.json\n`],
+                    uiPrompt: [nodeBasePrompt]
+                })
+                return;
+                break;
+            case 'react':
+                res.status(200).json({
+                    prompts: [BASE_PROMPT, `Here is an artifact that contains all files of the project visible to you.\nConsider the contents of ALL files in the project.\n\n${reactBasePrompt}\n\nHere is a list of files that exist on the file system but are not being shown to you:\n\n  - .gitignore\n  - package-lock.json\n`], 
+                    uiPrompt: [reactBasePrompt]
+                })
+                return;
+                break;
+            default:
+                res.status(403).json({message: "Invalid Request"})
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+
+})
+
+app.listen(3000, () => {
+    console.log(`Backend Server is Listening on http://localhost:3000 🚀`)
+})
 
 async function main() {
     try {
@@ -49,4 +99,4 @@ async function main() {
     }
 }
 
-main().catch(console.error);
+// main().catch(console.error);
