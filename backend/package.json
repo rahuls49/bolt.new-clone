@@ -3,6 +3,9 @@
     "dev": "tsc -b && node dist/index.js"
   },
   "dependencies": {
+    "@langchain/core": "^0.3.55",
+    "@langchain/groq": "^0.2.2",
+    "@langchain/openai": "^0.5.10",
     "@types/node": "^22.15.17",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",

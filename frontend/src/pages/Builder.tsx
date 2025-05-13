@@ -147,7 +147,7 @@ export function Builder() {
     const mountStructure = createMountStructure(files);
   
     // Mount the structure if WebContainer is available
-    console.log(mountStructure);
+    console.log({mountStructure});
     webcontainer?.mount(mountStructure);
   }, [files, webcontainer]);
 
@@ -156,10 +156,12 @@ export function Builder() {
       prompt: prompt.trim()
     });
     setTemplateSet(true);
-    
+    console.log({response: response.data})
     const {prompts, uiPrompts} = response.data;
-
-    setSteps(parseXml(uiPrompts[0]).map((x: Step) => ({
+    console.log({uiPrompts})
+    const parsedXML= parseXml(uiPrompts[0]);
+    console.log({parsedXML})
+    setSteps(parsedXML.map((x: Step) => ({
       ...x,
       status: "pending"
     })));
@@ -171,10 +173,11 @@ export function Builder() {
         content
       }))
     })
+    console.log({stepsResponse})
 
     setLoading(false);
 
-    setSteps(s => [...s, ...parseXml(stepsResponse.data.response).map(x => ({
+    setSteps(s => [...s, ...parseXml(stepsResponse.data.message).map(x => ({
       ...x,
       status: "pending" as "pending"
     }))]);

@@ -31,6 +31,7 @@ import type { Step } from './types';
  */
 export function parseXml(response: string): Step[] {
     // Extract the XML content between <boltArtifact> tags
+    console.log(response)
     const xmlMatch = response.match(/<boltArtifact[^>]*>([\s\S]*?)<\/boltArtifact>/);
     
     if (!xmlMatch) {

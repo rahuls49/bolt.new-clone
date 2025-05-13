@@ -1,9 +1,16 @@
 require("dotenv").config();
+import { ChatOpenAI } from "@langchain/openai";
 import OpenAI from 'openai';
 import { BASE_PROMPT, getSystemPrompt } from './prompt/prompts';
 import { reactBasePrompt, nodeBasePrompt } from './prompt/defaults/basePrompts';
 import express from "express";
-import cors from "cors"
+import cors from "cors";
+import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts"
+import { SystemMessage, HumanMessage, AIMessage } from "@langchain/core/messages";
+import { MESSAGE_TYPE } from "./types/message-type";
+import { ChatGroq } from "@langchain/groq";
+
+
 const openai = new OpenAI({
     baseURL: 'https://openrouter.ai/api/v1',
     apiKey: process.env.OPENAI_API_KEY,
@@ -43,14 +50,14 @@ app.post("/template", async (req, res) => {
             case 'node':
                 res.status(200).json({
                     prompts: [`Here is an artifact that contains all files of the project visible to you.\nConsider the contents of ALL files in the project.\n\n${nodeBasePrompt}\n\nHere is a list of files that exist on the file system but are not being shown to you:\n\n  - .gitignore\n  - package-lock.json\n`],
-                    uiPrompt: [nodeBasePrompt]
+                    uiPrompts: [nodeBasePrompt]
                 })
                 return;
                 break;
             case 'react':
                 res.status(200).json({
                     prompts: [BASE_PROMPT, `Here is an artifact that contains all files of the project visible to you.\nConsider the contents of ALL files in the project.\n\n${reactBasePrompt}\n\nHere is a list of files that exist on the file system but are not being shown to you:\n\n  - .gitignore\n  - package-lock.json\n`],
-                    uiPrompt: [reactBasePrompt]
+                    uiPrompts: [reactBasePrompt]
                 })
                 return;
                 break;
@@ -67,24 +74,45 @@ app.post("/template", async (req, res) => {
 
 app.post("/chat", async (req, res) => {
     const { messages } = req.body;
-    // console.log({messages})
     try {
-        const stream = await openai.chat.completions.create({
-            model: 'thudm/glm-4-32b:free',
-            messages,
-            stream: true,
+        // Uncomment this, in case you want to use OpenRouter for Code Generation
+
+        //     const llm = new ChatOpenAI(
+        // {
+        //     configuration: {
+        //         baseURL: 'https://openrouter.ai/api/v1',
+        //     },
+        //     model: "thudm/glm-4-32b:free",
+        //     // model: "agentica-org/deepcoder-14b-preview:free",
+        //     temperature: 0,
+        //     // maxRetries: 2,
+        //     // streaming: true,
+        //     apiKey: process.env.OPENAI_API_KEY,
+
+        //     // other params...
+        //     });
+
+
+        // Using Groq to generate code
+        const llm = new ChatGroq({
+            model: "meta-llama/llama-4-scout-17b-16e-instruct",
+            temperature: 0,
+            maxTokens: undefined,
+            maxRetries: 2,
+            // other params...
         });
-        // console.log(response?.choices[0]?.message)
-        // res.json({});
-        // res.setHeader('Content-Type', 'text/plain');
-        // res.setHeader('Transfer-Encoding', 'chunked');
-        for await (const chunk of stream) {
-            process.stdout.write(chunk.choices[0]?.delta?.content || '');
-            console.log(chunk.choices[0]?.delta?.content || '')
-            // res.write(chunk.choices[0]?.delta?.content || '')
-        }
-        // res.end();
-        res.status(200).json({});
+        const messagesForLLM = [];
+
+
+        const systemPromptContent = getSystemPrompt();
+        messagesForLLM.push(new SystemMessage(systemPromptContent));
+        messages.forEach((msg: MESSAGE_TYPE) => {
+            messagesForLLM.push(new HumanMessage({ content: msg.content }));
+        })
+        
+        const response = await llm.invoke(messagesForLLM);
+        console.log({ response })
+        res.status(200).json({ message: response?.content });
     } catch (error) {
         res.status(500).json({ message: error });
         console.error('Error:', error);
@@ -95,6 +123,9 @@ app.listen(3000, () => {
     console.log(`Backend Server is Listening on http://localhost:3000 🚀`)
 })
 
+
+// This function is for reference only
+/*
 async function main() {
     try {
         const stream = await openai.chat.completions.create({
@@ -130,5 +161,6 @@ async function main() {
         console.error('Error:', error);
     }
 }
+*/
 
 // main().catch(console.error);
