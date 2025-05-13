@@ -3,7 +3,7 @@ import OpenAI from 'openai';
 import { BASE_PROMPT, getSystemPrompt } from './prompt/prompts';
 import { reactBasePrompt, nodeBasePrompt } from './prompt/defaults/basePrompts';
 import express from "express";
-
+import cors from "cors"
 const openai = new OpenAI({
     baseURL: 'https://openrouter.ai/api/v1',
     apiKey: process.env.OPENAI_API_KEY,
@@ -14,7 +14,11 @@ const openai = new OpenAI({
 });
 
 const app = express();
+
 app.use(express.json());
+app.use(cors({
+    origin: "http://localhost:5173"
+}))
 
 app.post("/template", async (req, res) => {
     const { prompt } = req.body;
