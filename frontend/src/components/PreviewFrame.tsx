@@ -11,6 +11,8 @@ export function PreviewFrame({ files, webContainer }: PreviewFrameProps) {
   const [url, setUrl] = useState("");
 
   async function main() {
+    if(!webContainer || url) return
+    // console.log(webContainer)
     const installProcess = await webContainer.spawn('npm', ['install']);
 
     installProcess.output.pipeTo(new WritableStream({
@@ -18,6 +20,7 @@ export function PreviewFrame({ files, webContainer }: PreviewFrameProps) {
         console.log(data);
       }
     }));
+    console.log("npm install")
 
     await webContainer.spawn('npm', ['run', 'dev']);
 
@@ -32,7 +35,7 @@ export function PreviewFrame({ files, webContainer }: PreviewFrameProps) {
 
   useEffect(() => {
     main()
-  }, [])
+  }, [webContainer])
   return (
     <div className="h-full flex items-center justify-center text-gray-400">
       {!url && <div className="text-center">
