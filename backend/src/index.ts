@@ -23,9 +23,15 @@ const openai = new OpenAI({
 const app = express();
 
 app.use(express.json());
-app.use(cors({
-    origin: "http://localhost:5173"
-}))
+app.use(cors(
+    // {
+    // origin: "http://localhost:5173"
+    // }
+))
+
+app.get('/', (req, res) => {
+    res.send("Backend is up!")
+})
 
 app.post("/template", async (req, res) => {
     const { prompt } = req.body;
@@ -109,7 +115,7 @@ app.post("/chat", async (req, res) => {
         messages.forEach((msg: MESSAGE_TYPE) => {
             messagesForLLM.push(new HumanMessage({ content: msg.content }));
         })
-        
+
         const response = await llm.invoke(messagesForLLM);
         console.log({ response })
         res.status(200).json({ message: response?.content });
@@ -119,10 +125,17 @@ app.post("/chat", async (req, res) => {
     }
 })
 
-app.listen(3000, () => {
-    console.log(`Backend Server is Listening on http://localhost:3000 🚀`)
-})
+app.get('/favicon.ico', (req:any, res:any) => res.status(204).end());
 
+
+
+if (process.env.NODE_ENV === "dev") {
+    app.listen(3000, () => {
+        console.log(`Backend Server is Listening on http://localhost:3000 🚀`)
+    })
+}
+
+export default app;
 
 // This function is for reference only
 /*
